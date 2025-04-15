@@ -62,7 +62,7 @@ app.get('/api/exams', async (req, res) => {
     }
 });
 
-app.post('/api/exams', isAuthenticated,, async (req, res) => {
+app.post('/api/exams', isAuthenticated, async (req, res) => {
     try {
         const newExam = new Exam({
             title: req.body.title,
@@ -86,7 +86,7 @@ app.get('/api/exams/:id', async (req, res) => {
     }
 });
 
-app.put('/api/exams/:id', isAuthenticated,, async (req, res) => {
+app.put('/api/exams/:id', isAuthenticated, async (req, res) => {
     try {
         const updatedExam = await Exam.findByIdAndUpdate(
             req.params.id,
@@ -103,7 +103,7 @@ app.put('/api/exams/:id', isAuthenticated,, async (req, res) => {
     }
 });
 
-app.delete('/api/exams/:id', isAuthenticated,, async (req, res) => {
+app.delete('/api/exams/:id', isAuthenticated, async (req, res) => {
     try {
         const exam = await Exam.findById(req.params.id);
         if (!exam) return res.status(404).json({ message: 'Exam not found' });
@@ -130,7 +130,7 @@ app.get('/api/exams/:examId/questions', async (req, res) => {
     }
 });
 
-app.post('/api/exams/:examId/questions', isAuthenticated,, async (req, res) => {
+app.post('/api/exams/:examId/questions', isAuthenticated, async (req, res) => {
     try {
         // Verify exam exists
         const exam = await Exam.findById(req.params.examId);
@@ -152,7 +152,7 @@ app.post('/api/exams/:examId/questions', isAuthenticated,, async (req, res) => {
 });
 
 // Bulk add questions to an exam
-app.post('/api/exams/:examId/questions/bulk', isAuthenticated,, async (req, res) => {
+app.post('/api/exams/:examId/questions/bulk', isAuthenticated, async (req, res) => {
     try {
         // Verify exam exists
         const exam = await Exam.findById(req.params.examId);
@@ -189,7 +189,7 @@ app.get('/api/questions/:id', async (req, res) => {
     }
 });
 
-app.put('/api/questions/:id', isAuthenticated,, async (req, res) => {
+app.put('/api/questions/:id', isAuthenticated, async (req, res) => {
     try {
         const updatedQuestion = await Question.findByIdAndUpdate(
             req.params.id,
@@ -206,7 +206,7 @@ app.put('/api/questions/:id', isAuthenticated,, async (req, res) => {
     }
 });
 
-app.delete('/api/questions/:id', isAuthenticated,, async (req, res) => {
+app.delete('/api/questions/:id', isAuthenticated, async (req, res) => {
     try {
         const question = await Question.findByIdAndDelete(req.params.id);
         if (!question) return res.status(404).json({ message: 'Question not found' });
