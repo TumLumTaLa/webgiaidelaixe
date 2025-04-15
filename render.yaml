@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: driving-license-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb+srv://<user>:<pass>@cluster.mongodb.net/driving_exam
+      - key: PORT
+        value: 3000
+    autoDeploy: true

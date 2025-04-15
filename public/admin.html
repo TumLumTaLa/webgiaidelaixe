@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driving License Exam Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .selected-true {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .selected-false {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .correct {
+            background-color: #10b981;
+            color: white;
+        }
+        .incorrect {
+            background-color: #ef4444;
+            color: white;
+        }
+        .flagged {
+            background-color: #f59e0b;
+            color: white;
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        .question-card {
+            min-height: 200px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-3xl font-bold text-blue-800 mb-2">🚗 Driving License Exam Practice</h1>
+            <p class="text-gray-600">Test your knowledge with these True/False questions</p>
+        </header>
+
+        <!-- Exam Selection (Only visible initially) -->
+        <div id="exam-selection" class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">Select an Exam</h2>
+            <div class="mb-4">
+                <p class="text-gray-600 mb-2">Choose from available exams or create a new one:</p>
+                <div id="exams-list" class="space-y-2 mb-4">
+                    <p class="text-gray-500">Loading exams...</p>
+                </div>
+                <button id="create-exam-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                    <i class="fas fa-plus mr-2"></i> Create New Exam
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Exam Form (Initially Hidden) -->
+        <div id="create-exam-form" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">Create New Exam</h2>
+            <form id="exam-form" class="space-y-4">
+                <div>
+                    <label for="exam-title" class="block text-gray-700 mb-1">Exam Title</label>
+                    <input type="text" id="exam-title" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="exam-description" class="block text-gray-700 mb-1">Description</label>
+                    <textarea id="exam-description" class="w-full p-2 border border-gray-300 rounded" rows="3"></textarea>
+                </div>
+                <div>
+                    <label for="time-limit" class="block text-gray-700 mb-1">Time Limit (minutes)</label>
+                    <input type="number" id="time-limit" class="w-full p-2 border border-gray-300 rounded" value="30" min="5" max="120">
+                </div>
+                <div class="pt-4 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold mb-2">Add Questions</h3>
+                    <div id="questions-container">
+                        <!-- Template for one question -->
+                        <div class="question-template bg-gray-50 p-4 rounded mb-4">
+                            <div class="mb-2">
+                                <label class="block text-gray-700 mb-1">Question Text</label>
+                                <input type="text" class="question-text w-full p-2 border border-gray-300 rounded" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="block text-gray-700 mb-1">Answer</label>
+                                <select class="question-answer w-full p-2 border border-gray-300 rounded">
+                                    <option value="true">True</option>
+                                    <option value="false">False</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="block text-gray-700 mb-1">Explanation</label>
+                                <textarea class="question-explanation w-full p-2 border border-gray-300 rounded" rows="2"></textarea>
+                            </div>
+                            <button type="button" class="remove-question text-red-500 hover:text-red-700 text-sm">
+                                <i class="fas fa-trash mr-1"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" id="add-question-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+                            <i class="fas fa-plus mr-1"></i> Add Question
+                        </button>
+                        <button type="button" id="add-bulk-questions-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+                            <i class="fas fa-file-upload mr-1"></i> Bulk Add Questions
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between pt-4">
+                    <button type="button" id="back-to-exams-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+                        <i class="fas fa-arrow-left mr-1"></i> Back
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                        <i class="fas fa-save mr-1"></i> Save Exam
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bulk Add Questions Modal -->
+        <div id="bulk-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 w-full max-w-xl">
+                <h3 class="text-xl font-bold mb-4">Bulk Add Questions</h3>
+                <p class="mb-4 text-gray-600">Paste your questions in CSV format:</p>
+                <textarea id="bulk-questions" class="w-full h-40 p-2 border border-gray-300 rounded mb-4" placeholder="Question,Answer (true/false),Explanation
+You must always stop at a stop sign.,true,This is a legal requirement.
+..."></textarea>
+                <div class="flex justify-end gap-2">
+                    <button id="bulk-cancel" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+                        Cancel
+                    </button>
+                    <button id="bulk-add" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                        Add Questions
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Container (Hidden Initially) -->
+        <div id="quiz-container" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+            <!-- Exam Info Banner -->
+            <div id="exam-info-banner" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h2 id="exam-title-display" class="text-xl font-semibold text-blue-800 mb-1">Exam Title</h2>
+                <p id="exam-description-display" class="text-gray-600 text-sm mb-0">Exam description goes here</p>
+            </div>
+            
+            <!-- Timer and Progress -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center">
+                    <span class="text-lg font-semibold mr-2">Time Left:</span>
+                    <div id="timer" class="text-xl font-bold text-blue-600">30:00</div>
+                </div>
+                <div class="w-1/2 bg-gray-200 rounded-full h-4">
+                    <div id="progress-bar" class="progress-bar bg-blue-600 h-4 rounded-full" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Question Counter -->
+            <div class="flex justify-between items-center mb-4">
+                <div id="question-counter" class="text-gray-600 font-medium">Question 1 of 10</div>
+                <button id="flag-btn" class="flex items-center text-gray-600 hover:text-yellow-500">
+                    <i class="far fa-flag mr-1"></i> Flag for Review
+                </button>
+            </div>
+
+            <!-- Question Card -->
+            <div id="question-card" class="question-card bg-gray-50 rounded-lg p-6 mb-6">
+                <h2 id="question-text" class="text-xl font-semibold mb-4">Loading question...</h2>
+                <div class="flex flex-col space-y-4">
+                    <button id="true-btn" class="answer-btn py-3 px-6 rounded-lg border-2 border-gray-300 hover:bg-blue-100 transition">
+                        <i class="fas fa-check-circle mr-2"></i> True
+                    </button>
+                    <button id="false-btn" class="answer-btn py-3 px-6 rounded-lg border-2 border-gray-300 hover:bg-blue-100 transition">
+                        <i class="fas fa-times-circle mr-2"></i> False
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between">
+                <button id="prev-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition">
+                    <i class="fas fa-arrow-left mr-2"></i> Previous
+                </button>
+                <div>
+                    <button id="submit-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg mr-2 transition hidden">
+                        Submit Early
+                    </button>
+                    <button id="next-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                        Next Question <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Container (Hidden Initially) -->
+        <div id="results-container" class="bg-white rounded-lg shadow-md p-6 hidden">
+            <h2 class="text-2xl font-bold text-blue-800 mb-6">📝 Your Results</h2>
+            <div class="flex justify-between items-center mb-6">
+                <div class="text-center bg-blue-50 p-4 rounded-lg">
+                    <div class="text-4xl font-bold text-blue-600" id="score">0</div>
+                    <div class="text-gray-600">Correct Answers</div>
+                </div>
+                <div class="text-center bg-blue-50 p-4 rounded-lg">
+                    <div class="text-4xl font-bold text-blue-600" id="percentage">0%</div>
+                    <div class="text-gray-600">Success Rate</div>
+                </div>
+                <div class="text-center bg-blue-50 p-4 rounded-lg">
+                    <div class="text-4xl font-bold text-blue-600" id="time-taken">0:00</div>
+                    <div class="text-gray-600">Time Taken</div>
+                </div>
+            </div>
+
+            <div id="results-list" class="space-y-6">
+                <!-- Results will be populated here -->
+            </div>
+
+            <div class="mt-8 flex justify-center space-x-4">
+                <button id="back-to-exams-from-results" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg transition">
+                    <i class="fas fa-home mr-2"></i> Back to Exams
+                </button>
+                <button id="restart-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                    <i class="fas fa-redo mr-2"></i> Restart Exam
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL for API calls
+        const API_BASE_URL = 'http://localhost:3000/api';
+        
+        // DOM Elements
+        const examSelection = document.getElementById('exam-selection');
+        const createExamForm = document.getElementById('create-exam-form');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultsContainer = document.getElementById('results-container');
+        const examsList = document.getElementById('exams-list');
+        const createExamBtn = document.getElementById('create-exam-btn');
+        const backToExamsBtn = document.getElementById('back-to-exams-btn');
+        const backToExamsFromResults = document.getElementById('back-to-exams-from-results');
+        const examForm = document.getElementById('exam-form');
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const addBulkQuestionsBtn = document.getElementById('add-bulk-questions-btn');
+        const questionsContainer = document.getElementById('questions-container');
+        const bulkModal = document.getElementById('bulk-modal');
+        const bulkCancel = document.getElementById('bulk-cancel');
+        const bulkAdd = document.getElementById('bulk-add');
+        const bulkQuestions = document.getElementById('bulk-questions');
+        
+        // Quiz Elements
+        const questionText = document.getElementById('question-text');
+        const trueBtn = document.getElementById('true-btn');
+        const falseBtn = document.getElementById('false-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const questionCounter = document.getElementById('question-counter');
+        const flagBtn = document.getElementById('flag-btn');
+        const timer = document.getElementById('timer');
+        const progressBar = document.getElementById('progress-bar');
+        const scoreElement = document.getElementById('score');
+        const percentageElement = document.getElementById('percentage');
+        const timeTakenElement = document.getElementById('time-taken');
+        const resultsList = document.getElementById('results-list');
+        const restartBtn = document.getElementById('restart-btn');
+        const examTitleDisplay = document.getElementById('exam-title-display');
+        const examDescriptionDisplay = document.getElementById('exam-description-display');
+
+        // Quiz State
+        let currentQuestion = 0;
+        let userAnswers = [];
+        let flaggedQuestions = [];
+        let quizSubmitted = false;
+        let timerInterval;
+        let timeLeft = 30 * 60; // 30 minutes in seconds
+        let startTime;
+        let questions = [];
+        let currentExam = null;
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', fetchExams);
+        createExamBtn.addEventListener('click', showCreateExamForm);
+        backToExamsBtn.addEventListener('click', showExamSelection);
+        backToExamsFromResults.addEventListener('click', showExamSelection);
+        examForm.addEventListener('submit', saveExam);
+        addQuestionBtn.addEventListener('click', addQuestionField);
+        addBulkQuestionsBtn.addEventListener('click', () => bulkModal.classList.remove('hidden'));
+        bulkCancel.addEventListener('click', () => bulkModal.classList.add('hidden'));
+        bulkAdd.addEventListener('click', addBulkQuestions);
+
+        // Quiz Event Listeners
+        trueBtn.addEventListener('click', () => {
+            if (!quizSubmitted) {
+                userAnswers[currentQuestion] = true;
+                trueBtn.classList.add('selected-true');
+                falseBtn.classList.remove('selected-false');
+            }
+        });
+
+        falseBtn.addEventListener('click', () => {
+            if (!quizSubmitted) {
+                userAnswers[currentQuestion] = false;
+                falseBtn.classList.add('selected-false');
+                trueBtn.classList.remove('selected-true');
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                loadQuestion();
+                updateNavigationButtons();
+                updateFlagButton();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion();
+                updateNavigationButtons();
+                updateFlagButton();
+            }
+        });
+
+        submitBtn.addEventListener('click', submitQuiz);
+
+        flagBtn.addEventListener('click', () => {
+            flaggedQuestions[currentQuestion] = !flaggedQuestions[currentQuestion];
+            updateFlagButton();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            // Reset quiz state
+            currentQuestion = 0;
+            userAnswers = Array(questions.length).fill(null);
+            flaggedQuestions = Array(questions.length).fill(false);
+            quizSubmitted = false;
+            timeLeft = currentExam.timeLimit * 60;
+            
+            // Reset UI
+            resultsContainer.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            timer.classList.remove('text-red-500', 'pulse');
+            timer.classList.add('text-blue-600');
+            progressBar.classList.remove('bg-red-500');
+            progressBar.classList.add('bg-blue-600');
+            
+            // Restart quiz
+            clearInterval(timerInterval);
+            initQuiz();
+        });
+
+        // Fetch exams from API
+        async function fetchExams() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/exams`);
+                const exams = await response.json();
+                
+                displayExams(exams);
+            } catch (error) {
+                console.error('Error fetching exams:', error);
+                examsList.innerHTML = '<p class="text-red-500">Error loading exams. Please try again.</p>';
+            }
+        }
+
+        // Display exams in the list
+        function displayExams(exams) {
+            if (exams.length === 0) {
+                examsList.innerHTML = '<p class="text-gray-500">No exams available. Create your first exam.</p>';
+                return;
+            }
+            
+            examsList.innerHTML = '';
+            exams.forEach(exam => {
+                const examItem = document.createElement('div');
+                examItem.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-400 transition-colors cursor-pointer';
+                examItem.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold text-lg">${exam.title}</h3>
+                            <p class="text-gray-600 text-sm">${exam.description || 'No description'}</p>
+                            <p class="text-gray-500 text-xs mt-1">Time Limit: ${exam.timeLimit} minutes</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="start-exam-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded" data-exam-id="${exam._id}">
+                                <i class="fas fa-play mr-1"></i> Start
+                            </button>
+                            <button class="edit-exam-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded" data-exam-id="${exam._id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-exam-btn bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded" data-exam-id="${exam._id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                examsList.appendChild(examItem);
+                
+                // Add event listeners
+                examItem.querySelector('.start-exam-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startExam(exam._id);
+                });
+                
+                examItem.querySelector('.edit-exam-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editExam(exam._id);
+                });
+                
+                examItem.querySelector('.delete-exam-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteExam(exam._id);
+                });
+            });
+        }
+
+        // Show create exam form
+        function showCreateExamForm() {
+            examSelection.classList.add('hidden');
+            createExamForm.classList.remove('hidden');
+            
+            // Reset form
+            examForm.reset();
+            questionsContainer.innerHTML = '';
+            addQuestionField(); // Add one empty question field
+        }
+
+        // Show exam selection
+        function showExamSelection() {
+            examSelection.classList.remove('hidden');
+            createExamForm.classList.add('hidden');
+            quizContainer.classList.add('hidden');
+            resultsContainer.classList
